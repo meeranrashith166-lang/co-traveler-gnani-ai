@@ -125,6 +125,10 @@ GNANI_API_KEY=your_vachana_api_key_here
 *(A pre-configured working Gnani API key is already configured in `.env`).*
 
 ### 4. Start the Application Server
+**Option A: 1-Click Launch on Windows (Recommended)**
+Simply double-click `start.bat` (or `run.bat`). It automatically verifies Python dependencies, launches your browser at `http://localhost:8000`, and starts the server!
+
+**Option B: Manual Terminal Launch**
 ```bash
 python server.py
 ```
