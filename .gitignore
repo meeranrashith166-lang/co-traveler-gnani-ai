@@ -1,0 +1,15 @@
+# Environment & Secrets (Crucial: Protect your live Gnani API Key)
+.env
+
+# Python Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE & Editor files
+.vscode/
+.idea/
+
+# OS artifacts
+Thumbs.db
+.DS_Store

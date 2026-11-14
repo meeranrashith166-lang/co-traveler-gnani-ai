@@ -1,0 +1,18 @@
+{
+  "name": "Co-Traveler — Highway Voice Co-Pilot",
+  "short_name": "Co-Traveler",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0e17",
+  "theme_color": "#f59e0b",
+  "orientation": "portrait-primary",
+  "description": "Sovereign Highway Voice Co-Pilot for Indian Drivers powered by Gnani.ai",
+  "icons": [
+    {
+      "src": "/static/logo.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Co-Traveler — Sovereign Highway Voice Co-Pilot</title>
+  
+  <!-- Local Leaflet Map CSS (Offline-Proof) -->
+  <link rel="stylesheet" href="/static/leaflet/leaflet.css">
+  
+  <!-- App Stylesheet (v5.0 cache-busted) -->
+  <link rel="stylesheet" href="/static/style.css?v=5.0">
+  
+  <!-- Custom Logo as Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/static/logo.svg">
+  
+  <!-- PWA Manifest for Mobile Real-World Installation -->
+  <link rel="manifest" href="/manifest.json">
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="driver-header">
+    <div class="brand-badge">
+      <img src="/static/logo.svg" alt="Co-Traveler Logo" class="brand-logo-img">
+      <div class="brand-title">
+        <h1>Co-Traveler <span class="badge-sovereign">Sovereign AI</span></h1>
+        <p>Powered by Gnani.ai • Prisma STT & Timbre TTS</p>
+      </div>
+    </div>
+
+    <div class="header-controls">
+      <!-- DAY / NIGHT THEME TOGGLE -->
+      <button id="themeToggleBtn" class="theme-toggle-btn" title="Toggle Day / Night Mode">
+        <span id="themeIcon">☀️</span> <span id="themeLabel">Day</span>
+      </button>
+
+      <!-- LANGUAGE SELECTOR (ENGLISH DEFAULT) -->
+      <select id="langSelect" class="lang-select-btn" title="Choose Language">
+        <option value="en" selected>🇮🇳 English (Default)</option>
+        <option value="ta">🇮🇳 தமிழ் (Tamil)</option>
+        <option value="hi-en">🇮🇳 Hinglish</option>
+        <option value="hi">🇮🇳 हिन्दी (Hindi)</option>
+        <option value="pa">🇮🇳 ਪੰਜਾਬੀ (Punjabi)</option>
+        <option value="te">🇮🇳 తెలుగు (Telugu)</option>
+        <option value="kn">🇮🇳 ಕನ್ನಡ (Kannada)</option>
+        <option value="mr">🇮🇳 मराठी (Marathi)</option>
+      </select>
+    </div>
+  </header>
+
+  <!-- DRIVER HUD (HEADS-UP DISPLAY STRIP) -->
+  <section class="hud-strip">
+    <div class="hud-tile">
+      <div class="hud-label" id="hudRouteLabel">CURRENT ROUTE</div>
+      <div class="hud-val blue">NH Highway <small id="hudRouteSub">Live GPS Corridor</small></div>
+    </div>
+    <div class="hud-tile">
+      <div class="hud-label" id="hudSpeedLabel">VEHICLE SPEED</div>
+      <div class="hud-val speed" id="hudSpeed">0 <small>km/h</small></div>
+      <div class="hud-speed-sub" id="hudSpeedSub">⚡ Real-time GPS Calc</div>
+    </div>
+    <div class="hud-tile">
+      <div class="hud-label" id="hudTollLabel">NEXT TOLL PLAZA</div>
+      <div class="hud-val" id="hudNextToll">7.5 <small>km</small></div>
+    </div>
+    <div class="hud-tile">
+      <div class="hud-label" id="hudToiletLabel">CLEAN RESTROOM</div>
+      <div class="hud-val green" id="hudNextToilet">2.4 <small>km</small></div>
+    </div>
+  </section>
+
+  <!-- MAIN CONTAINER (SPLIT DASHBOARD: MAP ON LEFT, SPEAK ASSISTANT ON RIGHT) -->
+  <main class="container">
+    <div class="dashboard-split-layout">
+
+      <!-- LEFT COLUMN: MAP & DRIVER TILES -->
+      <div class="split-col-left">
+        <!-- REAL-WORLD INTERACTIVE HIGHWAY MAP -->
+        <section class="map-section">
+          <div class="map-header">
+            <h2 id="mapHeading">🗺️ Live Google Maps Highway Corridor</h2>
+            <div class="map-tools">
+              <button id="btnRecenter" class="map-tool-btn" title="Center camera directly on vehicle GPS coordinates">🎯 Center Vehicle</button>
+              <button id="btnDeviceGps" class="map-tool-btn" title="Live Device GPS">📡 Live GPS</button>
+              <button id="btnMapStyle" class="map-tool-btn" title="Toggle Satellite / Streets">🛰️ Satellite</button>
+              <button id="btnFilterAll" class="map-tool-btn" data-filter="all">All</button>
+              <button id="btnFilterBunk" class="map-tool-btn" data-filter="bunks">⛽ Fuel</button>
+              <button id="btnFilterToll" class="map-tool-btn" data-filter="tolls">🛣️ Tolls</button>
+              <button id="btnFilterRest" class="map-tool-btn" data-filter="rest">🚻 Rest</button>
+              <button id="btnFilterHosp" class="map-tool-btn" data-filter="hospitals">🏥 Hospital</button>
+              <button id="btnFilterEmergency" class="map-tool-btn" data-filter="emergency">🚨 SOS</button>
+            </div>
+          </div>
+
+          <!-- AUTOMATIC SILENT GPS STATUS READOUT -->
+          <div class="gps-status-bar" id="gpsStatusBar">
+            <div class="gps-status-text" id="gpsStatusText">
+              <span class="live-dot-pulse"></span>
+              <span id="gpsCoordDisplay">🛰️ GPS Live: Auto-detecting live location...</span>
+            </div>
+            <div class="gps-status-meta">
+              <button id="btnLiveDriveSim" class="speed-sim-btn" title="Simulate driving to test on-the-spot speed calculation">🚗 Test Live Speed</button>
+              <span class="speed-calc-badge">⚡ Live Speed Calc</span>
+            </div>
+          </div>
+
+          <!-- Leaflet Map Container -->
+          <div id="highwayMap"></div>
+
+          <!-- REAL-TIME DRIVING ROUTE HUD (GOOGLE MAPS STYLE) -->
+          <div class="map-route-hud" id="mapRouteHud">
+            <div class="route-info-left">
+              <div class="route-dest-name" id="routeDestName">🚗 Live Highway Road Route</div>
+              <div class="route-stats" id="routeStats">
+                <span class="route-badge-fastag">Google Maps Road</span>
+                <span id="routeDistanceEta">Distance: Calculating live driving route...</span>
+              </div>
+            </div>
+            <a id="btnOpenInGmaps" href="https://www.google.com/maps" target="_blank" class="gmaps-direct-btn">
+              🗺️ Navigate in Google Maps
+            </a>
+          </div>
+        </section>
+
+        <!-- 4 GIANT 1-TAP DRIVER ACTION TILES -->
+        <section class="action-grid">
+          <!-- 1. UPCOMING TOLLS -->
+          <button class="driver-big-btn btn-toll" id="btnQuickToll">
+            <div class="btn-icon">🛣️</div>
+            <div class="btn-details">
+              <h3 id="cardTollTitle">Upcoming Toll Plaza</h3>
+              <p id="quickTollSummary">National Highway Toll Plaza (7.5 km)</p>
+              <span class="quick-stat" id="cardTollStat">FASTag: ₹260 (Truck) • Low Wait</span>
+            </div>
+          </button>
+
+          <!-- 2. PETROL / DIESEL BUNK -->
+          <button class="driver-big-btn btn-mechanic" id="btnQuickBunk">
+            <div class="btn-icon">⛽</div>
+            <div class="btn-details">
+              <h3 id="cardBunkTitle">Fuel & Diesel Bunk</h3>
+              <p id="quickBunkSummary">Indian Oil (IOCL) 24x7 Highway Bunk (1.8 km)</p>
+              <span class="quick-stat" id="cardBunkStat">Diesel: ₹92.40 • Free Air & Water</span>
+            </div>
+          </button>
+
+          <!-- 3. CLEAN TOILETS & REST STOPS -->
+          <button class="driver-big-btn btn-toilet" id="btnQuickToilet">
+            <div class="btn-icon">🚻</div>
+            <div class="btn-details">
+              <h3 id="cardToiletTitle">Clean Restroom & Rest Hub</h3>
+              <p id="quickToiletSummary">Swachh Highway Certified Oasis (2.4 km)</p>
+              <span class="quick-stat" id="cardToiletStat">Clean Showers • Family Toilets • Food</span>
+            </div>
+          </button>
+
+          <!-- 4. EMERGENCY SOS & HOSPITALS -->
+          <button class="driver-big-btn btn-sos" id="btnQuickSOS">
+            <div class="btn-icon">🚨</div>
+            <div class="btn-details">
+              <h3 id="cardSosTitle">Emergency SOS & Hospital</h3>
+              <p id="quickSosSummary">Helpline 1033 & Trauma ICU (3.2 km)</p>
+              <span class="quick-stat" id="cardSosStat" style="background: rgba(239,68,68,0.25); color: var(--accent-red);">24x7 ICU • Ambulance • 40T Crane</span>
+            </div>
+          </button>
+        </section>
+      </div>
+
+      <!-- RIGHT COLUMN: SPEAK & VOICE CO-PILOT ASSISTANT -->
+      <div class="split-col-right">
+        <!-- CENTRAL VOICE DECK -->
+        <section class="voice-deck">
+          <div class="voice-engine-badge">⚡ Powered by Gnani.ai Indic Foundational Models (Prisma STT & Timbre TTS v3.0)</div>
+          
+          <!-- GIANT PUSH TO TALK BUTTON -->
+          <button id="pttBtn" class="ptt-button" title="Tap or Hold to Speak">
+            <span id="pttIcon">🎤</span>
+          </button>
+
+          <div class="voice-status" id="voiceStatus">Tap microphone and speak in English</div>
+
+          <!-- AUDIO WAVEFORM VISUALIZER -->
+          <canvas id="waveformCanvas"></canvas>
+
+          <!-- QUICK DRIVER PROMPT CHIPS -->
+          <div class="quick-chips-scroll" id="chipsContainer">
+            <button class="chip-btn" id="chip1" data-query="How far is the next toll and what is the FASTag fee?">🛣️ Toll Rates?</button>
+            <button class="chip-btn" id="chip2" data-query="Where is the nearest clean restroom and food stop?">🚻 Clean Restrooms?</button>
+            <button class="chip-btn" id="chipHosp" data-query="Where is the nearest hospital and emergency trauma ICU?">🏥 Nearest Hospital?</button>
+            <button class="chip-btn" id="chip3" data-query="Emergency help! Send an ambulance and heavy towing crane.">🚨 Emergency / Crane</button>
+            <button class="chip-btn" id="chip4" data-query="Where is the nearest 24x7 truck mechanic and tyre puncture shop?">🔧 Truck Mechanic</button>
+            <button class="chip-btn" id="chip5" data-query="I am feeling sleepy. Where is the nearest safe parking bay?">😴 Feeling Drowsy</button>
+          </div>
+        </section>
+
+        <!-- ASSISTANT RESPONSE FEED -->
+        <section class="response-container" id="responseSection">
+          <div class="response-header">
+            <div class="response-title" id="responseTitle">
+              <span>📢</span> <span id="responseTitleText">Assistant Response</span>
+            </div>
+            <button id="btnReplayAudio" class="chip-btn" style="display: none;">🔊 Replay Voice</button>
+          </div>
+
+          <div class="spoken-transcript" id="spokenTranscript">
+            "Welcome! Co-Traveler is active. The nearest fuel bunk is 1.8 km ahead with high-speed diesel and clean restrooms. Next toll is 7.5 km away, nearest ICU trauma hospital is 3.2 km away. Speak or tap any tile to navigate."
+          </div>
+
+          <!-- CARDS DECK (POPULATED DYNAMICALLY) -->
+          <div class="cards-deck" id="cardsDeck">
+            <!-- Rendered by JS -->
+          </div>
+        </section>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="driver-footer">
+    <p><strong>Co-Traveler</strong> — Sovereign AI Highway Co-Pilot for India's 9 Million Commercial Drivers.</p>
+    <p>Built with <a href="https://www.gnani.ai" target="_blank">Gnani.ai</a> Indic Foundational Speech Models (Prisma & Timbre).</p>
+  </footer>
+
+  <!-- Local Leaflet JS (Offline-Proof) -->
+  <script src="/static/leaflet/leaflet.js"></script>
+  
+  <!-- Main Application Script (v5.0 cache-busted) -->
+  <script src="/static/app.js?v=5.0"></script>
+</body>
+</html>
